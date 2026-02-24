@@ -1,0 +1,5 @@
+Model,Final Value (USDT),CR (%),Sortino Ratio,Volatility (%),MDD (%),Win Rate (%)
+DeepSeek-Chat-V3.1,"43,910.94",-12.18,-2.85,28.55,-14.02,52.9
+DeepSeek-Chat (Reproduced),"42,162.88",-15.67,-1.83,27.73,-16.23,51.0
+DeepSeek-Chat (Risk-Averse Mod),"41,437.63",-17.12,-10.83,59.19,-17.60,50.0
+CD5 Index (Buy & Hold),"42,851.46",-14.30,-12.71,54.93,-15.71,42.9

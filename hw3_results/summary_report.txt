@@ -1,0 +1,33 @@
+======================================================================
+HW3 REPRODUCIBILITY STUDY — AI-TRADER
+FTEC5660 Agentic AI for Business and FinTech
+Cryptocurrency Market: Nov 1–14, 2025
+======================================================================
+
+REPRODUCTION RESULTS (Table 1)
+----------------------------------------------------------------------
+                 Model Final Value (USDT) CR (%) Sortino Ratio Volatility (%) MDD (%) Win Rate (%)
+     Claude-3.7-Sonnet          42,348.32 -15.30         -2.27          32.18  -16.93         51.4
+    DeepSeek-Chat-V3.1          43,910.94 -12.18         -2.85          28.55  -14.02         52.9
+      Gemini-2.5-Flash          40,684.84 -18.63         -5.55          46.22  -20.15         41.4
+                 GPT-5          41,795.06 -16.41         -4.38          40.95  -17.98         58.8
+            MiniMax-M2          42,610.96 -14.78         -4.30          41.20  -16.57         46.9
+             Qwen3-Max          41,573.79 -16.85         -6.54          59.89  -18.03         45.0
+CD5 Index (Buy & Hold)          42,851.46 -14.30        -12.71          54.93  -15.71         42.9
+
+KEY OBSERVATIONS
+----------------------------------------------------------------------
+Best performer:  DeepSeek-Chat-V3.1 (CR=-12.18%)
+Worst performer: Gemini-2.5-Flash (CR=-18.63%)
+CD5 Baseline:    CR=-14.30%
+Models beating buy-and-hold: 1/6
+
+MODIFICATION RESULTS
+----------------------------------------------------------------------
+Baseline (deepseek-chat-v3.1): CR=-12.18%, MDD=-14.02%, SR=-2.85
+Risk-Averse Mod:               CR=-17.12%, MDD=-17.60%, SR=-10.83
+
+Delta (Mod - Baseline):
+  ΔCR  = -4.95%
+  ΔMDD = -3.58%
+  ΔSR  = -7.99
