@@ -1,0 +1,27 @@
+{
+  "agent_type": "BaseAgentCryptoRiskAverse",
+  "market": "crypto",
+  "date_range": {
+    "init_date": "2025-11-01",
+    "end_date": "2025-11-14"
+  },
+  "models": [
+    {
+      "name": "deepseek-chat",
+      "basemodel": "deepseek-chat",
+      "signature": "deepseek-chat-riskaverse",
+      "enabled": true,
+      "openai_base_url": "https://api.deepseek.com",
+      "openai_api_key": null
+    }
+  ],
+  "agent_config": {
+    "max_steps": 10,
+    "max_retries": 3,
+    "base_delay": 1.0,
+    "initial_cash": 50000.0
+  },
+  "log_config": {
+    "log_path": "./data/agent_data_crypto"
+  }
+}
