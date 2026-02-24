@@ -134,11 +134,22 @@ The following metrics were computed by running `tools/calculate_metrics.py` on t
 
 *Bold: best AI model (DeepSeek) and market benchmark.*
 
-### 4.2 My Reproduction Run (DeepSeek-Chat, Nov 1–14, 2025)
+### 4.2 My Reproduction Run (Nov 1–14, 2025)
 
-To independently reproduce one data point, I ran the full pipeline with a fresh DeepSeek-Chat agent. Metrics are computed by `tools/calculate_metrics.py` on the completed 14-day position file.
+To independently reproduce one data point, I ran the full pipeline with a fresh agent using the following configuration (see `configs/crypto_baseline_reproduce_config.json`):
 
-| Metric | Paper's DeepSeek-Chat-V3.1 | My Reproduction Run |
+| Config Item | Value |
+|---|---|
+| Model name | **`deepseek-chat`** |
+| Provider / base URL | DeepSeek official API — `https://api.deepseek.com` |
+| Agent signature | `deepseek-chat-reproduce` |
+| Agent class | `BaseAgentCrypto` |
+| Max steps/day | 10 |
+| Initial capital | 50,000 USDT |
+
+Metrics are computed by `tools/calculate_metrics.py` on the completed 14-day position file (`data/agent_data_crypto/deepseek-chat-reproduce/position/position.jsonl`).
+
+| Metric | Paper's DeepSeek-Chat-V3.1 | My Run (`deepseek-chat`, `api.deepseek.com`) |
 |---|---|---|
 | **Final Value** | 43,911 USDT | **42,163 USDT** |
 | **CR** | -12.18% | **-15.67%** |
