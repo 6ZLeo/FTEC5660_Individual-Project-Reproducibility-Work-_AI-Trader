@@ -30,21 +30,34 @@ class DeepSeekChatOpenAI(ChatOpenAI):
     """
 
     def _create_message_dicts(self, messages: list, stop: Optional[list] = None) -> list:
-        """Override to handle request parsing - convert JSON string arguments to dicts"""
+        """Override to handle request parsing.
+        Fixes two DeepSeek compatibility issues:
+        1. tool_calls.args must be a dict, not a JSON string
+        2. message content must be a string, not a list of content blocks
+        """
         message_dicts = super()._create_message_dicts(messages, stop)
 
-        # Fix tool_calls format in the message dicts for requests
         for message_dict in message_dicts:
+            # Fix 1: tool_calls arguments format (JSON string -> dict)
             if "tool_calls" in message_dict:
                 for tool_call in message_dict["tool_calls"]:
                     if "function" in tool_call and "arguments" in tool_call["function"]:
                         args = tool_call["function"]["arguments"]
-                        # If arguments is a string, parse it
                         if isinstance(args, str):
                             try:
                                 tool_call["function"]["arguments"] = json.loads(args)
                             except json.JSONDecodeError:
-                                pass  # Keep as string if parsing fails
+                                pass
+
+            # Fix 2: content must be a string for DeepSeek (not a list of blocks)
+            if "content" in message_dict and isinstance(message_dict["content"], list):
+                parts = []
+                for block in message_dict["content"]:
+                    if isinstance(block, dict):
+                        parts.append(block.get("text", str(block)))
+                    else:
+                        parts.append(str(block))
+                message_dict["content"] = "\n".join(parts)
 
         return message_dicts
 
@@ -99,6 +112,33 @@ from prompts.agent_prompt_crypto import STOP_SIGNAL, get_agent_system_prompt_cry
 from tools.general_tools import (extract_conversation, extract_tool_messages,
                                  get_config_value, write_config_value)
 from tools.price_tools import add_no_trade_record
+
+# ---------------------------------------------------------------------------
+# Monkey-patch langchain_openai to convert list-type message content to string.
+# DeepSeek API requires content to be a string; LangChain MCP adapters may
+# return list-type content blocks. This patch runs once at import time.
+# ---------------------------------------------------------------------------
+try:
+    import langchain_openai.chat_models.base as _lc_base
+
+    _original_fmt = _lc_base._format_message_content
+
+    def _deepseek_safe_format_content(content, api="chat/completions", role=None):
+        result = _original_fmt(content, api=api, role=role)
+        # If the result is still a list, collapse to a single string
+        if isinstance(result, list):
+            parts = []
+            for block in result:
+                if isinstance(block, dict):
+                    parts.append(block.get("text", str(block)))
+                else:
+                    parts.append(str(block))
+            return "\n".join(parts) if parts else ""
+        return result
+
+    _lc_base._format_message_content = _deepseek_safe_format_content
+except Exception:
+    pass  # If patch fails, continue without it
 
 # Load environment variables
 load_dotenv()

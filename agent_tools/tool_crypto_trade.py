@@ -5,8 +5,14 @@ from typing import Any, Dict, List, Optional
 from fastmcp import FastMCP
 
 from typing import Dict, List, Optional, Any
-import fcntl
 from pathlib import Path
+
+# Cross-platform file locking
+try:
+    import fcntl
+    _HAS_FCNTL = True
+except ImportError:
+    _HAS_FCNTL = False  # Windows: fcntl not available, use no-op lock
 # Add project root directory to Python path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
@@ -21,23 +27,31 @@ from tools.price_tools import (get_latest_position, get_open_prices,
 mcp = FastMCP("CryptoTradeTools")
 
 def _position_lock(signature: str):
-    """Context manager for file-based lock to serialize position updates per signature."""
-    class _Lock:
-        def __init__(self, name: str):
-            base_dir = Path(project_root) / "data" / "agent_data" / name
-            base_dir.mkdir(parents=True, exist_ok=True)
-            self.lock_path = base_dir / ".position.lock"
-            # Ensure lock file exists
-            self._fh = open(self.lock_path, "a+")
-        def __enter__(self):
-            fcntl.flock(self._fh.fileno(), fcntl.LOCK_EX)
-            return self
-        def __exit__(self, exc_type, exc, tb):
-            try:
-                fcntl.flock(self._fh.fileno(), fcntl.LOCK_UN)
-            finally:
-                self._fh.close()
-    return _Lock(signature)
+    """Context manager for file-based lock to serialize position updates per signature.
+    Uses fcntl on Unix; falls back to a no-op lock on Windows (single-threaded usage).
+    """
+    if _HAS_FCNTL:
+        class _FcntlLock:
+            def __init__(self, name: str):
+                base_dir = Path(project_root) / "data" / "agent_data" / name
+                base_dir.mkdir(parents=True, exist_ok=True)
+                self.lock_path = base_dir / ".position.lock"
+                self._fh = open(self.lock_path, "a+")
+            def __enter__(self):
+                fcntl.flock(self._fh.fileno(), fcntl.LOCK_EX)
+                return self
+            def __exit__(self, exc_type, exc, tb):
+                try:
+                    fcntl.flock(self._fh.fileno(), fcntl.LOCK_UN)
+                finally:
+                    self._fh.close()
+        return _FcntlLock(signature)
+    else:
+        # Windows: no-op context manager (single-threaded, no concurrent access)
+        class _NoOpLock:
+            def __enter__(self): return self
+            def __exit__(self, *args): pass
+        return _NoOpLock()
 
 
 

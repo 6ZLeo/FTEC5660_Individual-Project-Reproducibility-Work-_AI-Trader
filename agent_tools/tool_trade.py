@@ -5,8 +5,13 @@ from typing import Any, Dict, List, Optional
 from fastmcp import FastMCP
 
 from typing import Dict, List, Optional, Any
-import fcntl
 from pathlib import Path
+
+try:
+    import fcntl
+    _HAS_FCNTL = True
+except ImportError:
+    _HAS_FCNTL = False
 # Add project root directory to Python path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
@@ -21,35 +26,38 @@ from tools.price_tools import (get_latest_position, get_open_prices,
 mcp = FastMCP("TradeTools")
 
 def _position_lock(signature: str):
-    """Context manager for file-based lock to serialize position updates per signature."""
-    class _Lock:
-        def __init__(self, name: str):
-            # Prefer LOG_PATH so the lock file lives alongside the positions file
-            log_path = get_config_value("LOG_PATH", "./data/agent_data")
-            # Resolve base dir for this signature under the configured log path
-            if os.path.isabs(log_path):
-                # Absolute path (e.g., temp directory)
-                base_dir = Path(log_path) / name
-            else:
-                # Relative path: treat "./data/xxx" specially to keep compatibility
-                if log_path.startswith("./data/"):
-                    log_rel = log_path[7:]  # strip "./data/"
+    """Context manager for file-based lock to serialize position updates per signature.
+    Uses fcntl on Unix; falls back to a no-op lock on Windows.
+    """
+    if _HAS_FCNTL:
+        class _FcntlLock:
+            def __init__(self, name: str):
+                log_path = get_config_value("LOG_PATH", "./data/agent_data")
+                if os.path.isabs(log_path):
+                    base_dir = Path(log_path) / name
                 else:
-                    log_rel = log_path
-                base_dir = Path(project_root) / "data" / log_rel / name
-            base_dir.mkdir(parents=True, exist_ok=True)
-            self.lock_path = base_dir / ".position.lock"
-            # Ensure lock file exists
-            self._fh = open(self.lock_path, "a+")
-        def __enter__(self):
-            fcntl.flock(self._fh.fileno(), fcntl.LOCK_EX)
-            return self
-        def __exit__(self, exc_type, exc, tb):
-            try:
-                fcntl.flock(self._fh.fileno(), fcntl.LOCK_UN)
-            finally:
-                self._fh.close()
-    return _Lock(signature)
+                    if log_path.startswith("./data/"):
+                        log_rel = log_path[7:]
+                    else:
+                        log_rel = log_path
+                    base_dir = Path(project_root) / "data" / log_rel / name
+                base_dir.mkdir(parents=True, exist_ok=True)
+                self.lock_path = base_dir / ".position.lock"
+                self._fh = open(self.lock_path, "a+")
+            def __enter__(self):
+                fcntl.flock(self._fh.fileno(), fcntl.LOCK_EX)
+                return self
+            def __exit__(self, exc_type, exc, tb):
+                try:
+                    fcntl.flock(self._fh.fileno(), fcntl.LOCK_UN)
+                finally:
+                    self._fh.close()
+        return _FcntlLock(signature)
+    else:
+        class _NoOpLock:
+            def __enter__(self): return self
+            def __exit__(self, *args): pass
+        return _NoOpLock()
 
 
 
