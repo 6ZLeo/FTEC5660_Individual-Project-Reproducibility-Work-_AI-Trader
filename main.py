@@ -33,6 +33,10 @@ AGENT_REGISTRY = {
     "BaseAgentCrypto": {
         "module": "agent.base_agent_crypto.base_agent_crypto",
         "class": "BaseAgentCrypto"
+    },
+    "BaseAgentCryptoRiskAverse": {
+        "module": "agent.base_agent_crypto.base_agent_crypto_riskaverse",
+        "class": "BaseAgentCryptoRiskAverse"
     }
 }
 
@@ -254,7 +258,7 @@ async def main(config_path=None):
         try:
             # Dynamically create Agent instance
             # Crypto agents have different parameter requirements
-            if agent_type == "BaseAgentCrypto":
+            if agent_type in ("BaseAgentCrypto", "BaseAgentCryptoRiskAverse"):
                 agent = AgentClass(
                     signature=signature,
                     basemodel=basemodel,
