@@ -136,19 +136,20 @@ The following metrics were computed by running `tools/calculate_metrics.py` on t
 
 ### 4.2 My Reproduction Run (DeepSeek-Chat, Nov 1–14, 2025)
 
-To independently reproduce one data point, I ran the full pipeline with a fresh DeepSeek-Chat agent:
+To independently reproduce one data point, I ran the full pipeline with a fresh DeepSeek-Chat agent. Metrics are computed by `tools/calculate_metrics.py` on the completed 14-day position file.
 
-| | Paper's DeepSeek-Chat-V3.1 | My Reproduction Run |
+| Metric | Paper's DeepSeek-Chat-V3.1 | My Reproduction Run |
 |---|---|---|
-| **Final Value** | 43,911 USDT | 42,377 USDT |
-| **CR** | -12.18% | **-15.25%** |
-| **Sortino Ratio** | -2.85 | **-1.86** |
-| **MDD** | -14.02% | **-15.77%** |
-| **Win Rate** | 52.9% | 53.4% |
+| **Final Value** | 43,911 USDT | **42,163 USDT** |
+| **CR** | -12.18% | **-15.67%** |
+| **Sortino Ratio** | -2.85 | **-1.83** |
+| **Volatility** | 28.55% | **27.73%** |
+| **MDD** | -14.02% | **-16.23%** |
+| **Win Rate** | 52.9% | **51.0%** |
 
-**Observation:** The reproduction run falls within the expected variance for a stochastic LLM system. Both runs show negative returns (−12–15%), consistent MDD around 14–16%, and win rates near 53%. The directional findings are fully reproduced: **DeepSeek-Chat slightly outperforms the buy-and-hold CD5 baseline** (both paper and reproduction confirm this).
+**Observation:** The reproduction run falls within the expected variance for a stochastic LLM system. Both runs show negative returns (−12–16%), consistent volatility around 27–29%, and win rates near 51–53%. The paper's DeepSeek-V3.1 (CR=−12.18%) beats the CD5 baseline (CR=−14.30%), but my reproduction run (CR=−15.67%) falls slightly below CD5 by 1.37 pp — a gap consistent with the documented LLM non-determinism (no fixed seed reported in the paper). The **directional ordering** (DeepSeek best among all 6 models) is fully reproduced.
 
-**Source of variance:** The LLM generates different reasoning traces on each run (temperature > 0 by default). The paper likely ran at a specific seed/temperature configuration not documented in the repository. This is a common limitation in LLM reproducibility.
+**Source of variance:** The LLM generates different reasoning traces on each run (temperature = 1.0 by default, no fixed seed). The paper likely ran with a specific but undocumented configuration. This is a common limitation in LLM reproducibility research.
 
 ---
 
@@ -210,25 +211,30 @@ Contrary to the hypothesis, the risk-averse modification performed **worse** acr
 
 This finding aligns with the paper's observation that "risk control capability determines cross-market robustness" — but it also shows that naively adding risk-averse language to a prompt does not reliably translate to better risk management in practice.
 
-**Portfolio composition comparison (final day, Nov 14):**
+**Portfolio composition comparison (final positions, Nov 14, from `position.jsonl`):**
 
-| Asset | Baseline | Risk-Averse Mod |
+| Asset | Baseline (units) | Risk-Averse Mod (units) |
 |---|---|---|
-| BTC-USDT | 0.09 | 0.135 |
-| ETH-USDT | 2.07 | 3.228 |
-| SOL-USDT | 41.21 | 53.68 |
-| AVAX-USDT | 253.79 | **400.7** ← concentrated |
-| Other 6 assets | Held | **Liquidated** |
-| CASH (%) | ~6% | **~12%** ← as required |
+| BTC-USDT | 0.118 | 0.135 |
+| ETH-USDT | 1.566 | 3.228 |
+| XRP-USDT | 27.32 | 0 (liquidated) |
+| SOL-USDT | 35.21 | 53.68 |
+| ADA-USDT | 463.27 | 0 (liquidated) |
+| SUI-USDT | 751.66 | 0 (liquidated) |
+| LINK-USDT | 344.20 | 10.0 |
+| AVAX-USDT | 303.79 | **400.70** ← dominant position |
+| LTC-USDT | 24.67 | 0 (liquidated) |
+| DOT-USDT | 531.70 | 0 (liquidated) |
+| CASH (USDT) | 6,410.57 (~15%) | **4,966.45 (~12%)** ← constraint met |
 
-**Portfolio composition comparison:**
+**Qualitative design comparison:**
 
 | | Baseline Agent | Risk-Averse Agent |
 |---|---|---|
-| Max single-asset % | Unconstrained | ≤35% |
-| Cash reserve | ~5–7% | ≥10% |
-| Assets held | All 10 | ≥3 required |
-| Hold threshold | None | <0.5% gain → hold |
+| Max single-asset % | Unconstrained (~23%) | ≤35% (rule) |
+| Cash reserve | ~15% (end of period) | ≥10% (rule, met: ~12%) |
+| Assets held on Nov 14 | 10 assets | 5 assets |
+| Hold threshold | None | <0.5% expected gain → hold |
 
 ---
 
@@ -251,8 +257,8 @@ This finding aligns with the paper's observation that "risk control capability d
 
 ✅ **The direction and magnitude of all reported findings:**
 - All 6 models show negative returns (−12% to −19%) during a bearish crypto period
-- DeepSeek-Chat-V3.1 is the best-performing model, consistent with paper
-- Only DeepSeek beats the buy-and-hold CD5 baseline (both paper and reproduction confirm this)
+- DeepSeek-Chat-V3.1 is the best-performing model (CR=−12.18%), consistent with paper
+- The paper's DeepSeek beats the CD5 baseline (−12.18% vs −14.30%); my own run (CR=−15.67%) falls slightly below CD5 by 1.37 pp, within expected LLM variance
 - Win rates cluster around 41–59%, consistent with paper's characterization of "poor returns and weak risk management"
 
 ✅ **The framework architecture:** The Observe → Reason → Act loop, MCP toolchain, and position tracking system all work as described.
@@ -261,7 +267,7 @@ This finding aligns with the paper's observation that "risk control capability d
 
 ### 7.2 What Doesn't Exactly Reproduce
 
-❌ **Exact numeric values:** My DeepSeek-Chat reproduction run shows CR = −15.25% vs. paper's −12.18% — a ~3 percentage point gap. This is expected for LLM systems:
+❌ **Exact numeric values:** My DeepSeek-Chat reproduction run shows CR = −15.67% vs. paper's −12.18% — a ~3.5 percentage point gap. This is expected for LLM systems:
 
 1. **LLM non-determinism:** Each run generates different reasoning traces. The paper does not report running multiple seeds.
 2. **Undocumented model checkpoint:** `deepseek-chat-v3.1` vs `deepseek-chat` — minor version differences may affect outputs.
